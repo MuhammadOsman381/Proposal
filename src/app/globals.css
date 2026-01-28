@@ -38,17 +38,18 @@
 }
 
 
+/* globals.css */
 @keyframes fall {
   0% {
-    transform: translateY(0) translateX(0);
+    transform: translateY(0) translateX(0) rotate(0deg);
     opacity: 0.8;
   }
   50% {
-    transform: translateY(50vh) translateX(10px);
+    transform: translateY(50vh) translateX(10px) rotate(45deg);
     opacity: 1;
   }
   100% {
-    transform: translateY(110vh) translateX(-10px);
+    transform: translateY(110vh) translateX(-10px) rotate(90deg);
     opacity: 0;
   }
 }
