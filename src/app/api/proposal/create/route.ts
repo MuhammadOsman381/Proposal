@@ -7,6 +7,15 @@ export async function POST(req: Request) {
     try {
         const { adminKey, secretKey, message, date } = await req.json();
 
+        const [year, month, day, hour, minute] = date
+  .match(/\d+/g)!
+  .map(Number);
+
+const targetDate = new Date(year, month - 1, day, hour, minute, 0); // seconds = 0
+
+
+        console.log("Received data:", { adminKey, secretKey, message, date });
+
         if (!adminKey || !secretKey || !message || !date) {
             return NextResponse.json(
                 { error: "All fields required" },
@@ -29,7 +38,7 @@ export async function POST(req: Request) {
                     adminKey,
                     secretKey,
                     message,
-                    date: new Date(date),
+                    date: targetDate,
                 })
                 .returning();
         } else {
@@ -39,7 +48,7 @@ export async function POST(req: Request) {
                     adminKey,
                     secretKey,
                     message,
-                    date: new Date(date),
+                    date: targetDate,
                 })
                 .where(eq(proposal.id, 1))
                 .returning();

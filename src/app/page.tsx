@@ -1,16 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import CryptoJS, { enc } from "crypto-js";
 import confetti from "canvas-confetti";
 import GridBackground from "@/components/GridBackground";
 import useGetAndDelete from "@/hooks/useGetAndDelete";
 import axios from "axios";
 
 type Stage = "timer" | "secret" | "proposal";
-
-const SETTINGS_KEY = "proposal_admin_settings";
-const ENCRYPTION_KEY = "default_key";
 
 export default function Page() {
   const [stage, setStage] = useState<Stage>("timer");
@@ -30,31 +26,42 @@ export default function Page() {
 
   const getProposal = useGetAndDelete(axios.get);
 
-
   const getData = async () => {
     const response = await getProposal.callApi("proposal/get", false, false);
     if (response.success) {
       setEncryptedSecret(response.data.secretKey);
       setMessage(response.data.message);
-      setTargetDate(new Date(response.data.date));
+      const utcDate = response.data.date;
+      const localDate = new Date(
+        Date.UTC(
+          parseInt(utcDate.slice(0, 4)),
+          parseInt(utcDate.slice(5, 7)) - 1,
+          parseInt(utcDate.slice(8, 10)),
+          parseInt(utcDate.slice(11, 13)),
+          parseInt(utcDate.slice(14, 16)),
+          parseInt(utcDate.slice(17, 19))
+        )
+      );
+      setTargetDate(localDate);
     }
-  }
+  };
 
   useEffect(() => {
     getData();
   }, []);
 
-
   useEffect(() => {
-    if (stage !== "timer" || !targetDate) return;
+    if (stage !== "timer" || !targetDate || isNaN(targetDate.getTime())) return;
 
-    const interval = setInterval(() => {
-      const diff = targetDate.getTime() - Date.now();
+    const updateTimer = () => {
+      let diff = targetDate.getTime() - Date.now();
+
+      console.log(targetDate.getTime());
 
       if (diff <= 0) {
+        setTimeLeft({ d: 0, h: 0, m: 0, s: 0 });
         setStage("secret");
-        clearInterval(interval);
-        return;
+        return true; // signal to stop interval
       }
 
       const days = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -63,10 +70,19 @@ export default function Page() {
       const seconds = Math.floor((diff / 1000) % 60);
 
       setTimeLeft({ d: days, h: hours, m: minutes, s: seconds });
+      return false; // continue interval
+    };
+
+    // Run once immediately
+    if (updateTimer()) return;
+
+    const interval = setInterval(() => {
+      if (updateTimer()) clearInterval(interval);
     }, 1000);
 
     return () => clearInterval(interval);
   }, [stage, targetDate]);
+
 
   const partyPopper = () => {
     const end = Date.now() + 4000;
