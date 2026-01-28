@@ -17,6 +17,9 @@ const SnowFlower = () => (
   </svg>
 );
 
+
+
+
 export default function GridBackground() {
   const [flakes, setFlakes] = useState<JSX.Element[]>([]);
 
