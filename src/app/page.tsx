@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import CryptoJS, { enc } from "crypto-js";
 import confetti from "canvas-confetti";
 import GridBackground from "@/components/GridBackground";
+import useGetAndDelete from "@/hooks/useGetAndDelete";
+import axios from "axios";
 
 type Stage = "timer" | "secret" | "proposal";
 
@@ -26,41 +28,20 @@ export default function Page() {
     s: 0,
   });
 
-  useEffect(() => {
-    const saved = localStorage.getItem(SETTINGS_KEY);
-    if (!saved) return;
+  const getProposal = useGetAndDelete(axios.get);
 
-    try {
-      const data = JSON.parse(saved);
 
-      console.log("Loaded settings:", data);
-
-      // Decrypt secret
-      if (data.secretKey) {
-        const decryptedSecret = CryptoJS.AES.decrypt(data.secretKey, ENCRYPTION_KEY).toString(CryptoJS.enc.Utf8);
-        console.log("Decrypted secret key:", decryptedSecret);
-        setEncryptedSecret(decryptedSecret);
-      }
-
-      // Decrypt message
-      if (data.message) {
-        const decryptedMessage = CryptoJS.AES.decrypt(data.message, ENCRYPTION_KEY).toString(CryptoJS.enc.Utf8);
-        setMessage(decryptedMessage);
-      }
-
-      // Decrypt and validate date
-      if (data.date) {
-        const decryptedDate = CryptoJS.AES.decrypt(data.date, ENCRYPTION_KEY).toString(CryptoJS.enc.Utf8);
-        const validDate = new Date(decryptedDate);
-        if (!isNaN(validDate.getTime())) {
-          setTargetDate(validDate);
-        } else {
-          console.warn("Invalid decrypted date:", decryptedDate);
-        }
-      }
-    } catch (err) {
-      console.error("Failed to load settings:", err);
+  const getData = async () => {
+    const response = await getProposal.callApi("proposal/get", false, false);
+    if (response.success) {
+      setEncryptedSecret(response.data.secretKey);
+      setMessage(response.data.message);
+      setTargetDate(new Date(response.data.date));
     }
+  }
+
+  useEffect(() => {
+    getData();
   }, []);
 
 
@@ -136,18 +117,18 @@ export default function Page() {
       )}
 
       {stage === "secret" && (
-        <div className="bg-slate-800  p-6 rounded-xl w-80  text-center space-y-4">
+        <div className="bg-slate-800 border-t-2 border-slate-700  p-6 rounded-xl w-80  text-center space-y-4">
           <h2 className="text-xl font-semibold">Enter Secret 🔐</h2>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-3 py-2  outline-none bg-slate-700 rounded"
+            className="w-full px-3 py-2 border-t-2 border-slate-600  outline-none bg-slate-700 rounded"
           />
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <button
             onClick={unlock}
-            className="w-full bg-pink-600 py-2 rounded hover:bg-pink-700 text-white"
+            className="w-full bg-pink-600 border-t-2 border-pink-500 py-1.5 rounded hover:bg-pink-700 hover:border-pink-600 text-white"
           >
             Unlock
           </button>
@@ -155,7 +136,7 @@ export default function Page() {
       )}
 
       {stage === "proposal" && (
-        <div className="bg-slate-800 p-8 rounded-2xl w-96 text-center space-y-4">
+        <div className="bg-slate-800 p-8 border-t-2 border-slate-700 rounded-2xl  w-96 text-center space-y-4">
           <h1 className="text-3xl font-bold ">💍 Pata nhi</h1>
           <p className="text-gray-400">{message}</p>
         </div>
